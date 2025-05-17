@@ -1,0 +1,1629 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Focus Flow Blaze - Pomodoro Timer</title>
+    <meta name="description" content="A beautiful and functional Pomodoro timer application" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Theme color for browser UI -->
+    <meta name="theme-color" content="#784BA0" />
+
+    <style>
+      :root {
+        --primary: #FCA5A5;
+        --primary-rgb: 252, 165, 165;
+        --secondary: #FED7AA;
+        --secondary-rgb: 254, 215, 170;
+        --accent: #A78BFA;
+        --accent-rgb: 167, 139, 250;
+        --background: linear-gradient(to bottom, #7F1D1D, #B91C1C, #EF4444);
+        --card-bg: linear-gradient(135deg, #FCA5A5 0%, #F87171 50%, #EF4444 100%);
+        --text: #FEF2F2;
+        --text-rgb: 254, 242, 242;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: var(--background);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Background animation */
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          45deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.05) 25%,
+          transparent 50%,
+          rgba(255, 255, 255, 0.05) 75%,
+          transparent 100%
+        );
+        background-size: 200% 200%;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      .bg-animation-enabled::before {
+        opacity: 1;
+        animation: backgroundShift 15s ease-in-out infinite;
+      }
+
+      /* Particles */
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(var(--primary-rgb, 252, 165, 165), 0.5);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      @keyframes float-particle {
+        0% {
+          transform: translateY(0) translateX(0);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-100vh) translateX(var(--x-end));
+          opacity: 0;
+        }
+      }
+
+      @keyframes backgroundShift {
+        0% { background-position: 0% 0%; }
+        25% { background-position: 100% 0%; }
+        50% { background-position: 100% 100%; }
+        75% { background-position: 0% 100%; }
+        100% { background-position: 0% 0%; }
+      }
+
+      .container {
+        max-width: 500px;
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 3rem;
+        text-align: center;
+        margin-bottom: 30px;
+        font-weight: 800;
+        text-shadow: 0 0 20px rgba(252, 165, 165, 0.6);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+        animation: glow 3s ease-in-out infinite;
+        position: relative;
+      }
+
+      h1::before, h1::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 30px;
+        height: 30px;
+        background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+        border-radius: 50%;
+        opacity: 0.6;
+        filter: blur(5px);
+        animation: float 3s ease-in-out infinite alternate;
+      }
+
+      h1::before {
+        left: -40px;
+        transform: translateY(-50%);
+        animation-delay: 0.5s;
+      }
+
+      h1::after {
+        right: -40px;
+        transform: translateY(-50%);
+        animation-delay: 1s;
+      }
+
+      .timer-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25),
+                    0 0 20px rgba(252, 165, 165, 0.3),
+                    inset 0 0 10px rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(252, 165, 165, 0.2);
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .timer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.3),
+                    0 0 30px rgba(252, 165, 165, 0.4),
+                    inset 0 0 15px rgba(255, 255, 255, 0.2);
+      }
+
+      .timer-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle at center,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 80%
+        );
+        transform: rotate(30deg);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .timer-display {
+        font-size: 5rem;
+        text-align: center;
+        font-weight: bold;
+        margin: 30px 0;
+        text-shadow: 0 0 15px rgba(252, 165, 165, 0.5);
+        letter-spacing: 2px;
+        animation: glow 3s ease-in-out infinite;
+        position: relative;
+        z-index: 1;
+      }
+
+      .timer-display::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 120%;
+        height: 120%;
+        background: radial-gradient(circle, rgba(252, 165, 165, 0.2) 0%, transparent 70%);
+        transform: translate(-50%, -50%);
+        z-index: -1;
+        border-radius: 50%;
+        animation: pulse 4s ease-in-out infinite;
+      }
+
+      .timer-display::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.2) 25%,
+          rgba(255, 255, 255, 0.2) 75%,
+          transparent 100%
+        );
+        background-size: 200% 100%;
+        z-index: 2;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+        animation: shimmer 3s linear infinite;
+      }
+
+      .button-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      button {
+        padding: 14px 28px;
+        border-radius: 30px;
+        border: none;
+        background: rgba(255,255,255,0.15);
+        color: var(--text);
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 5px 15px rgba(252, 165, 165, 0.4);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+        z-index: -1;
+      }
+
+      button:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(252, 165, 165, 0.6);
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+      }
+
+      button:hover::before {
+        transform: translateX(100%);
+      }
+
+      button:active {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: 0 2px 10px rgba(252, 165, 165, 0.4);
+      }
+
+      #start-btn {
+        background: rgba(var(--primary-rgb, 252, 165, 165), 0.3);
+        box-shadow: 0 5px 15px rgba(var(--primary-rgb, 252, 165, 165), 0.4);
+      }
+
+      #reset-btn {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      #skip-btn {
+        background: rgba(var(--secondary-rgb, 254, 215, 170), 0.3);
+        box-shadow: 0 5px 15px rgba(var(--secondary-rgb, 254, 215, 170), 0.4);
+      }
+
+      .session-counter {
+        background: rgba(0,0,0,0.1);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(252, 165, 165, 0.2);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15),
+                    inset 0 0 10px rgba(255, 255, 255, 0.05);
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .session-counter:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2),
+                    inset 0 0 15px rgba(255, 255, 255, 0.1);
+      }
+
+      .session-counter::before {
+        content: '';
+        position: absolute;
+        top: -100%;
+        left: -100%;
+        width: 300%;
+        height: 300%;
+        background: radial-gradient(
+          circle at center,
+          rgba(255, 255, 255, 0.05) 0%,
+          transparent 70%
+        );
+        transform: rotate(45deg);
+        animation: rotate 15s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .session-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .session-info span {
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        position: relative;
+      }
+
+      .session-info span::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.3;
+      }
+
+      .session-progress {
+        display: flex;
+        gap: 6px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-segment {
+        height: 10px;
+        flex: 1;
+        border-radius: 5px;
+        background: rgba(255,255,255,0.1);
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .progress-segment::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transform: translateX(-100%);
+      }
+
+      .progress-segment.active {
+        background: var(--primary);
+        box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
+        animation: glow 3s ease-in-out infinite;
+      }
+
+      .progress-segment.active::before {
+        animation: shimmer 2s linear infinite;
+      }
+
+      .footer {
+        margin-top: 40px;
+        text-align: center;
+        opacity: 0.8;
+        font-size: 1rem;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        padding: 15px;
+        border-top: 1px solid rgba(252, 165, 165, 0.2);
+        background: rgba(0,0,0,0.05);
+        border-radius: 0 0 15px 15px;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+      }
+
+      .footer::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent 0%,
+          var(--primary) 50%,
+          transparent 100%
+        );
+        opacity: 0.5;
+      }
+
+      .footer p {
+        position: relative;
+        display: inline-block;
+      }
+
+      .footer p span {
+        position: relative;
+        display: inline-block;
+        animation: float 3s ease-in-out infinite;
+        animation-delay: 0.5s;
+      }
+
+      .theme-toggle {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .theme-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+
+      .theme-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+          circle at center,
+          rgba(255, 255, 255, 0.3) 0%,
+          transparent 70%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .theme-btn:hover {
+        transform: scale(1.1) translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+      }
+
+      .theme-btn:hover::before {
+        opacity: 1;
+      }
+
+      .theme-btn.active {
+        transform: scale(1.3);
+        border: 2px solid var(--text);
+        box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.5),
+                    inset 0 0 5px rgba(255, 255, 255, 0.5);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .theme-btn.active::after {
+        content: "✓";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        animation: float 2s ease-in-out infinite;
+      }
+
+      .theme-sunset {
+        background: linear-gradient(135deg, #FCA5A5 0%, #F87171 50%, #EF4444 100%);
+      }
+
+      .theme-ocean {
+        background: linear-gradient(135deg, #22D3EE 0%, #06B6D4 50%, #0E7490 100%);
+      }
+
+      .theme-purple {
+        background: linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #7E22CE 100%);
+      }
+
+      .theme-green {
+        background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
+      }
+
+      .theme-blue {
+        background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%);
+      }
+
+      .theme-dark {
+        background: linear-gradient(135deg, #334155 0%, #1E293B 50%, #0F172A 100%);
+      }
+
+      .theme-light {
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%);
+      }
+
+      @keyframes glow {
+        0%, 100% { filter: brightness(1); }
+        50% { filter: brightness(1.3); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      /* High contrast mode */
+      .high-contrast {
+        --text: #FFFFFF;
+        --primary: #FFFFFF;
+        --secondary: #FFFFFF;
+      }
+
+      .high-contrast .timer-card {
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid white;
+      }
+
+      .high-contrast .timer-display {
+        text-shadow: none;
+      }
+
+      .high-contrast button {
+        background: black;
+        color: white;
+        border: 2px solid white;
+      }
+
+      /* Larger text mode */
+      .larger-text .timer-display {
+        font-size: 6rem;
+      }
+
+      .larger-text h1 {
+        font-size: 3.5rem;
+      }
+
+      .larger-text h2, .larger-text h3 {
+        font-size: 1.3rem;
+      }
+
+      .larger-text button {
+        font-size: 1.2rem;
+      }
+
+      .larger-text .session-info {
+        font-size: 1.1rem;
+      }
+
+      .larger-text label, .larger-text span {
+        font-size: 1.1rem;
+      }
+
+      /* Reduced animations */
+      .reduce-animations * {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+
+      /* 3D animations */
+      .animations-3d-enabled .timer-display {
+        transition: transform 0.2s ease-out;
+        transform-style: preserve-3d;
+      }
+
+      .animations-3d-enabled .timer-card {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .animations-3d-enabled .timer-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          to bottom right,
+          rgba(255, 255, 255, 0.2) 0%,
+          rgba(255, 255, 255, 0.05) 40%,
+          rgba(255, 255, 255, 0) 50%,
+          rgba(255, 255, 255, 0.05) 60%,
+          rgba(255, 255, 255, 0.2) 100%
+        );
+        transform: rotate(45deg);
+        pointer-events: none;
+        z-index: 10;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Focus Flow Blaze</h1>
+
+      <div class="timer-card">
+        <div class="timer-display">25:00</div>
+
+        <div class="button-container">
+          <button id="start-btn">Start</button>
+          <button id="reset-btn">Reset</button>
+          <button id="skip-btn">Skip</button>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button id="settings-btn" style="font-size: 0.9rem; padding: 8px 16px;">⚙ Advanced Settings</button>
+        </div>
+
+        <div id="advanced-settings" style="display: none; margin-top: 20px; background: rgba(0,0,0,0.1); padding: 20px; border-radius: 15px; backdrop-filter: blur(8px);">
+          <h3 style="margin-bottom: 15px; text-align: center; font-size: 1.1rem;">Advanced Settings</h3>
+
+          <!-- Timer Settings -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Timer Intervals</h4>
+
+            <div style="margin-bottom: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Work Duration (minutes)</label>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="work-duration" min="1" max="60" value="25" style="flex: 1;">
+                <span id="work-duration-value">25</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Short Break (minutes)</label>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="short-break" min="1" max="15" value="5" style="flex: 1;">
+                <span id="short-break-value">5</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Long Break (minutes)</label>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="long-break" min="5" max="30" value="15" style="flex: 1;">
+                <span id="long-break-value">15</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Sessions Before Long Break</label>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="sessions-count" min="1" max="10" value="4" style="flex: 1;">
+                <span id="sessions-count-value">4</span>
+              </div>
+            </div>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+              <span>Auto-start Next Session</span>
+              <input type="checkbox" id="auto-start" style="width: 20px; height: 20px;">
+            </label>
+          </div>
+
+          <!-- Accessibility Settings -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Accessibility</h4>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span>High Contrast Mode</span>
+              <input type="checkbox" id="high-contrast" style="width: 20px; height: 20px;">
+            </label>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span>Larger Text</span>
+              <input type="checkbox" id="larger-text" style="width: 20px; height: 20px;">
+            </label>
+
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Reduce Animations</span>
+              <input type="checkbox" id="reduce-animations" style="width: 20px; height: 20px;">
+            </label>
+          </div>
+
+          <!-- Visual Effects -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Visual Effects</h4>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span>Eye Tracking (Mouse)</span>
+              <input type="checkbox" id="eye-tracking" style="width: 20px; height: 20px;">
+            </label>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span>Parallax Effects</span>
+              <input type="checkbox" id="parallax" checked style="width: 20px; height: 20px;">
+            </label>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span>3D Animations</span>
+              <input type="checkbox" id="animations-3d" checked style="width: 20px; height: 20px;">
+            </label>
+
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Background Animation</span>
+              <input type="checkbox" id="bg-animation" checked style="width: 20px; height: 20px;">
+            </label>
+          </div>
+
+          <!-- Audio Settings -->
+          <div style="margin-bottom: 10px;">
+            <h4 style="margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Audio</h4>
+
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <span>Play Sounds</span>
+              <input type="checkbox" id="play-sounds" checked style="width: 20px; height: 20px;">
+            </label>
+
+            <div style="margin-bottom: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Volume</label>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="volume" min="0" max="100" value="50" style="flex: 1;">
+                <span id="volume-value">50%</span>
+              </div>
+            </div>
+
+            <h5 style="margin: 15px 0 10px; font-size: 0.9rem;">Custom Sounds</h5>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+              <button class="sound-btn" data-sound-type="start">Start Sound</button>
+              <button class="sound-btn" data-sound-type="break">Break Sound</button>
+              <button class="sound-btn" data-sound-type="complete">Complete Sound</button>
+            </div>
+            <input type="file" id="sound-upload" accept="audio/*" style="display: none;">
+          </div>
+
+          <!-- Reset Button -->
+          <div style="margin-top: 20px; text-align: center;">
+            <button id="reset-settings" style="background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.3);">Reset All Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="session-counter">
+        <div class="session-info">
+          <span style="color: var(--primary)">Session 1 of 4</span>
+          <span style="color: var(--secondary)">Total completed: 0</span>
+        </div>
+
+        <div class="session-progress">
+          <div class="progress-segment active"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+        </div>
+      </div>
+
+      <div class="theme-toggle">
+        <h3 style="width: 100%; text-align: center; margin-bottom: 10px; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px;">Choose Theme</h3>
+        <button class="theme-btn theme-sunset active" data-theme="sunset"></button>
+        <button class="theme-btn theme-ocean" data-theme="ocean"></button>
+        <button class="theme-btn theme-purple" data-theme="purple"></button>
+        <button class="theme-btn theme-green" data-theme="green"></button>
+        <button class="theme-btn theme-blue" data-theme="blue"></button>
+        <button class="theme-btn theme-dark" data-theme="dark"></button>
+        <button class="theme-btn theme-light" data-theme="light"></button>
+      </div>
+
+      <div class="footer">
+        <p>Stay focused. Stay productive. <span style="color: var(--primary)">Achieve more.</span></p>
+      </div>
+    </div>
+
+    <script>
+      // Timer functionality
+      let timer;
+      let timeLeft = 25 * 60; // 25 minutes in seconds
+      let isActive = false;
+      let completedSessions = 0;
+      let totalSessions = 4;
+      let currentMode = 'work'; // 'work', 'shortBreak', or 'longBreak'
+
+      // Default settings
+      const defaultSettings = {
+        work: 25 * 60, // 25 minutes in seconds
+        shortBreak: 5 * 60, // 5 minutes in seconds
+        longBreak: 15 * 60, // 15 minutes in seconds
+        sessionsBeforeLongBreak: 4,
+        autoStart: false,
+        highContrast: false,
+        largerText: false,
+        reduceAnimations: false,
+        enableEyeTracking: false,
+        enableParallax: true,
+        enable3DAnimations: true,
+        enableBgAnimation: true,
+        playSounds: true,
+        volume: 50,
+        customSounds: {
+          start: 'https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3',
+          break: 'https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3',
+          complete: 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3'
+        }
+      };
+
+      // Load settings from localStorage or use defaults
+      let settings = JSON.parse(localStorage.getItem('pomodoroSettings')) || {...defaultSettings};
+
+      // Save settings to localStorage
+      function saveSettings() {
+        localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+      }
+
+      const timerDisplay = document.querySelector('.timer-display');
+      const startBtn = document.getElementById('start-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const skipBtn = document.getElementById('skip-btn');
+      const settingsBtn = document.getElementById('settings-btn');
+      const advancedSettings = document.getElementById('advanced-settings');
+
+      // Timer settings elements
+      const workDurationSlider = document.getElementById('work-duration');
+      const workDurationValue = document.getElementById('work-duration-value');
+      const shortBreakSlider = document.getElementById('short-break');
+      const shortBreakValue = document.getElementById('short-break-value');
+      const longBreakSlider = document.getElementById('long-break');
+      const longBreakValue = document.getElementById('long-break-value');
+      const sessionsCountSlider = document.getElementById('sessions-count');
+      const sessionsCountValue = document.getElementById('sessions-count-value');
+      const autoStartCheckbox = document.getElementById('auto-start');
+
+      // Accessibility settings elements
+      const highContrastCheckbox = document.getElementById('high-contrast');
+      const largerTextCheckbox = document.getElementById('larger-text');
+      const reduceAnimationsCheckbox = document.getElementById('reduce-animations');
+
+      // Visual effects settings elements
+      const eyeTrackingCheckbox = document.getElementById('eye-tracking');
+      const parallaxCheckbox = document.getElementById('parallax');
+      const animations3dCheckbox = document.getElementById('animations-3d');
+      const bgAnimationCheckbox = document.getElementById('bg-animation');
+
+      // Audio settings elements
+      const playSoundsCheckbox = document.getElementById('play-sounds');
+      const volumeSlider = document.getElementById('volume');
+      const volumeValue = document.getElementById('volume-value');
+      const soundButtons = document.querySelectorAll('.sound-btn');
+      const soundUpload = document.getElementById('sound-upload');
+
+      // Reset settings button
+      const resetSettingsBtn = document.getElementById('reset-settings');
+
+      // Format time as mm:ss
+      function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      // Update timer display
+      function updateDisplay() {
+        timerDisplay.textContent = formatTime(timeLeft);
+      }
+
+      // Play sound
+      function playSound(soundType) {
+        if (!settings.playSounds) return;
+
+        const audio = new Audio(settings.customSounds[soundType]);
+        audio.volume = settings.volume / 100; // Convert percentage to 0-1 range
+        audio.play().catch(err => console.error('Error playing sound:', err));
+      }
+
+      // Set timer mode
+      function setTimerMode(mode) {
+        currentMode = mode;
+
+        // Set time based on mode
+        if (mode === 'work') {
+          timeLeft = settings.work;
+          document.body.classList.remove('break-mode', 'long-break-mode');
+          document.body.classList.add('work-mode');
+        } else if (mode === 'shortBreak') {
+          timeLeft = settings.shortBreak;
+          document.body.classList.remove('work-mode', 'long-break-mode');
+          document.body.classList.add('break-mode');
+        } else if (mode === 'longBreak') {
+          timeLeft = settings.longBreak;
+          document.body.classList.remove('work-mode', 'break-mode');
+          document.body.classList.add('long-break-mode');
+        }
+
+        updateDisplay();
+      }
+
+      // Handle timer completion
+      function handleTimerCompleted() {
+        clearInterval(timer);
+        isActive = false;
+        startBtn.textContent = 'Start';
+
+        // Play completion sound
+        playSound('complete');
+
+        // Update session counter if work session completed
+        if (currentMode === 'work') {
+          completedSessions++;
+          updateSessionCounter();
+
+          // Determine next mode
+          if (completedSessions % settings.sessionsBeforeLongBreak === 0) {
+            setTimerMode('longBreak');
+          } else {
+            setTimerMode('shortBreak');
+          }
+        } else {
+          // After break, go back to work mode
+          setTimerMode('work');
+        }
+
+        // Auto-start next session if enabled
+        if (settings.autoStart) {
+          setTimeout(() => {
+            startTimer();
+          }, 1000); // Small delay to allow for mode transition
+        }
+      }
+
+      // Start timer
+      function startTimer() {
+        if (isActive) {
+          // Pause timer
+          clearInterval(timer);
+          isActive = false;
+          startBtn.textContent = 'Start';
+        } else {
+          // Start timer
+          isActive = true;
+          startBtn.textContent = 'Pause';
+
+          // Play start sound
+          if (currentMode === 'work') {
+            playSound('start');
+          } else {
+            playSound('break');
+          }
+
+          timer = setInterval(() => {
+            timeLeft--;
+            updateDisplay();
+
+            if (timeLeft <= 0) {
+              handleTimerCompleted();
+            }
+          }, 1000);
+        }
+      }
+
+      // Reset timer
+      function resetTimer() {
+        clearInterval(timer);
+        isActive = false;
+
+        // Reset to current mode's time
+        if (currentMode === 'work') {
+          timeLeft = settings.work;
+        } else if (currentMode === 'shortBreak') {
+          timeLeft = settings.shortBreak;
+        } else {
+          timeLeft = settings.longBreak;
+        }
+
+        startBtn.textContent = 'Start';
+        updateDisplay();
+      }
+
+      // Skip to next session
+      function skipToNextSession() {
+        clearInterval(timer);
+        isActive = false;
+        startBtn.textContent = 'Start';
+
+        if (currentMode === 'work') {
+          // Skip to break
+          completedSessions++;
+          updateSessionCounter();
+
+          if (completedSessions % settings.sessionsBeforeLongBreak === 0) {
+            setTimerMode('longBreak');
+          } else {
+            setTimerMode('shortBreak');
+          }
+        } else {
+          // Skip to work
+          setTimerMode('work');
+        }
+      }
+
+      // Update session counter
+      function updateSessionCounter() {
+        const currentSession = (completedSessions % totalSessions) + 1;
+        document.querySelector('.session-info span:first-child').textContent = `Session ${currentSession} of ${totalSessions}`;
+        document.querySelector('.session-info span:last-child').textContent = `Total completed: ${completedSessions}`;
+
+        // Update progress segments
+        const segments = document.querySelectorAll('.progress-segment');
+        segments.forEach((segment, index) => {
+          if (index < (completedSessions % totalSessions)) {
+            segment.classList.add('active');
+          } else {
+            segment.classList.remove('active');
+          }
+        });
+      }
+
+      // Advanced settings toggle
+      settingsBtn.addEventListener('click', () => {
+        if (advancedSettings.style.display === 'none') {
+          advancedSettings.style.display = 'block';
+          settingsBtn.textContent = '✕ Hide Settings';
+        } else {
+          advancedSettings.style.display = 'none';
+          settingsBtn.textContent = '⚙ Advanced Settings';
+        }
+      });
+
+      // Timer settings event listeners
+      workDurationSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        workDurationValue.textContent = value;
+        settings.work = value * 60;
+
+        if (currentMode === 'work') {
+          timeLeft = settings.work;
+          updateDisplay();
+        }
+
+        saveSettings();
+      });
+
+      shortBreakSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        shortBreakValue.textContent = value;
+        settings.shortBreak = value * 60;
+
+        if (currentMode === 'shortBreak') {
+          timeLeft = settings.shortBreak;
+          updateDisplay();
+        }
+
+        saveSettings();
+      });
+
+      longBreakSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        longBreakValue.textContent = value;
+        settings.longBreak = value * 60;
+
+        if (currentMode === 'longBreak') {
+          timeLeft = settings.longBreak;
+          updateDisplay();
+        }
+
+        saveSettings();
+      });
+
+      sessionsCountSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        sessionsCountValue.textContent = value;
+        settings.sessionsBeforeLongBreak = value;
+        totalSessions = value;
+        updateSessionCounter();
+        saveSettings();
+      });
+
+      autoStartCheckbox.addEventListener('change', (e) => {
+        settings.autoStart = e.target.checked;
+        saveSettings();
+      });
+
+      // Accessibility settings event listeners
+      highContrastCheckbox.addEventListener('change', (e) => {
+        settings.highContrast = e.target.checked;
+        if (settings.highContrast) {
+          document.body.classList.add('high-contrast');
+        } else {
+          document.body.classList.remove('high-contrast');
+        }
+        saveSettings();
+      });
+
+      largerTextCheckbox.addEventListener('change', (e) => {
+        settings.largerText = e.target.checked;
+        if (settings.largerText) {
+          document.body.classList.add('larger-text');
+        } else {
+          document.body.classList.remove('larger-text');
+        }
+        saveSettings();
+      });
+
+      reduceAnimationsCheckbox.addEventListener('change', (e) => {
+        settings.reduceAnimations = e.target.checked;
+        if (settings.reduceAnimations) {
+          document.body.classList.add('reduce-animations');
+        } else {
+          document.body.classList.remove('reduce-animations');
+        }
+        saveSettings();
+      });
+
+      // Visual effects settings event listeners
+      eyeTrackingCheckbox.addEventListener('change', (e) => {
+        settings.enableEyeTracking = e.target.checked;
+        if (settings.enableEyeTracking) {
+          enableEyeTracking();
+        } else {
+          disableEyeTracking();
+        }
+        saveSettings();
+      });
+
+      parallaxCheckbox.addEventListener('change', (e) => {
+        settings.enableParallax = e.target.checked;
+        if (settings.enableParallax) {
+          document.body.classList.add('parallax-enabled');
+        } else {
+          document.body.classList.remove('parallax-enabled');
+        }
+        saveSettings();
+      });
+
+      animations3dCheckbox.addEventListener('change', (e) => {
+        settings.enable3DAnimations = e.target.checked;
+        if (settings.enable3DAnimations) {
+          document.body.classList.add('animations-3d-enabled');
+        } else {
+          document.body.classList.remove('animations-3d-enabled');
+        }
+        saveSettings();
+      });
+
+      bgAnimationCheckbox.addEventListener('change', (e) => {
+        settings.enableBgAnimation = e.target.checked;
+        if (settings.enableBgAnimation) {
+          document.body.classList.add('bg-animation-enabled');
+          createParticles();
+        } else {
+          document.body.classList.remove('bg-animation-enabled');
+          // Remove particles
+          document.querySelectorAll('.particle').forEach(p => p.remove());
+        }
+        saveSettings();
+      });
+
+      // Audio settings event listeners
+      playSoundsCheckbox.addEventListener('change', (e) => {
+        settings.playSounds = e.target.checked;
+        saveSettings();
+      });
+
+      volumeSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        volumeValue.textContent = value + '%';
+        settings.volume = value;
+        saveSettings();
+      });
+
+      // Custom sounds
+      soundButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          soundUpload.setAttribute('data-sound-type', btn.dataset.soundType);
+          soundUpload.click();
+        });
+      });
+
+      soundUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const soundType = e.target.getAttribute('data-sound-type');
+        const url = URL.createObjectURL(file);
+        settings.customSounds[soundType] = url;
+
+        // Play a preview
+        playSound(soundType);
+        saveSettings();
+      });
+
+      // Reset settings
+      resetSettingsBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to reset all settings to default?')) {
+          settings = {...defaultSettings};
+          saveSettings();
+          initializeSettingsUI();
+
+          // Reset timer to current mode's default time
+          if (currentMode === 'work') {
+            timeLeft = settings.work;
+          } else if (currentMode === 'shortBreak') {
+            timeLeft = settings.shortBreak;
+          } else {
+            timeLeft = settings.longBreak;
+          }
+
+          updateDisplay();
+        }
+      });
+
+      // Eye tracking functionality
+      let mouseX = 0;
+      let mouseY = 0;
+
+      function enableEyeTracking() {
+        document.addEventListener('mousemove', handleMouseMove);
+      }
+
+      function disableEyeTracking() {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.body.style.backgroundPosition = 'center center';
+        timerDisplay.style.transform = 'none';
+      }
+
+      function handleMouseMove(e) {
+        mouseX = e.clientX / window.innerWidth - 0.5; // -0.5 to 0.5
+        mouseY = e.clientY / window.innerHeight - 0.5; // -0.5 to 0.5
+
+        // Apply parallax effect to background
+        if (settings.enableParallax) {
+          document.body.style.backgroundPosition = `${50 + mouseX * 10}% ${50 + mouseY * 10}%`;
+        }
+
+        // Apply 3D effect to timer
+        if (settings.enable3DAnimations) {
+          timerDisplay.style.transform = `perspective(1000px) rotateX(${mouseY * -10}deg) rotateY(${mouseX * 10}deg)`;
+        }
+      }
+
+      // Event listeners
+      startBtn.addEventListener('click', startTimer);
+      resetBtn.addEventListener('click', resetTimer);
+      skipBtn.addEventListener('click', skipToNextSession);
+
+      // Initialize settings UI
+      function initializeSettingsUI() {
+        // Timer settings
+        workDurationSlider.value = settings.work / 60;
+        workDurationValue.textContent = settings.work / 60;
+
+        shortBreakSlider.value = settings.shortBreak / 60;
+        shortBreakValue.textContent = settings.shortBreak / 60;
+
+        longBreakSlider.value = settings.longBreak / 60;
+        longBreakValue.textContent = settings.longBreak / 60;
+
+        sessionsCountSlider.value = settings.sessionsBeforeLongBreak;
+        sessionsCountValue.textContent = settings.sessionsBeforeLongBreak;
+
+        autoStartCheckbox.checked = settings.autoStart;
+
+        // Accessibility settings
+        highContrastCheckbox.checked = settings.highContrast;
+        largerTextCheckbox.checked = settings.largerText;
+        reduceAnimationsCheckbox.checked = settings.reduceAnimations;
+
+        // Visual effects settings
+        eyeTrackingCheckbox.checked = settings.enableEyeTracking;
+        parallaxCheckbox.checked = settings.enableParallax;
+        animations3dCheckbox.checked = settings.enable3DAnimations;
+        bgAnimationCheckbox.checked = settings.enableBgAnimation;
+
+        // Audio settings
+        playSoundsCheckbox.checked = settings.playSounds;
+        volumeSlider.value = settings.volume;
+        volumeValue.textContent = settings.volume + '%';
+
+        // Apply settings to UI
+        applySettings();
+      }
+
+      // Initialize app
+      initializeSettingsUI();
+      updateDisplay();
+      applyTheme('sunset');
+
+      // Apply background animation
+      if (settings.enableBgAnimation) {
+        document.body.classList.add('bg-animation-enabled');
+
+        // Create particles
+        createParticles();
+      }
+
+      // Initialize timer mode
+      setTimerMode('work');
+
+      // Create floating particles
+      function createParticles() {
+        const container = document.body;
+        const particleCount = 20;
+
+        // Remove any existing particles
+        document.querySelectorAll('.particle').forEach(p => p.remove());
+
+        for (let i = 0; i < particleCount; i++) {
+          const particle = document.createElement('div');
+          particle.classList.add('particle');
+
+          // Random size between 3px and 8px
+          const size = Math.random() * 5 + 3;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+
+          // Random position
+          const posX = Math.random() * 100;
+          particle.style.left = `${posX}%`;
+          particle.style.bottom = `-${size}px`;
+
+          // Random horizontal movement
+          const xEnd = (Math.random() - 0.5) * 100;
+          particle.style.setProperty('--x-end', `${xEnd}px`);
+
+          // Random opacity
+          particle.style.opacity = (Math.random() * 0.5 + 0.3).toString();
+
+          // Random animation duration between 10s and 30s
+          const duration = Math.random() * 20 + 10;
+          particle.style.animation = `float-particle ${duration}s linear infinite`;
+
+          // Random delay
+          const delay = Math.random() * 30;
+          particle.style.animationDelay = `${delay}s`;
+
+          // Random color based on theme
+          const hue = Math.random() * 60 - 30; // -30 to +30 from base color
+          particle.style.filter = `hue-rotate(${hue}deg)`;
+
+          // Add to container
+          container.appendChild(particle);
+        }
+      }
+
+      // Apply settings to the UI
+      function applySettings() {
+        // Apply high contrast mode
+        if (settings.highContrast) {
+          document.body.classList.add('high-contrast');
+        } else {
+          document.body.classList.remove('high-contrast');
+        }
+
+        // Apply larger text
+        if (settings.largerText) {
+          document.body.classList.add('larger-text');
+        } else {
+          document.body.classList.remove('larger-text');
+        }
+
+        // Apply reduced animations
+        if (settings.reduceAnimations) {
+          document.body.classList.add('reduce-animations');
+        } else {
+          document.body.classList.remove('reduce-animations');
+        }
+
+        // Apply eye tracking
+        if (settings.enableEyeTracking) {
+          enableEyeTracking();
+        } else {
+          disableEyeTracking();
+        }
+
+        // Apply parallax effects
+        if (settings.enableParallax) {
+          document.body.classList.add('parallax-enabled');
+        } else {
+          document.body.classList.remove('parallax-enabled');
+        }
+
+        // Apply 3D animations
+        if (settings.enable3DAnimations) {
+          document.body.classList.add('animations-3d-enabled');
+        } else {
+          document.body.classList.remove('animations-3d-enabled');
+        }
+
+        // Apply background animations
+        if (settings.enableBgAnimation) {
+          document.body.classList.add('bg-animation-enabled');
+          createParticles();
+        } else {
+          document.body.classList.remove('bg-animation-enabled');
+          document.querySelectorAll('.particle').forEach(p => p.remove());
+        }
+
+        // Update total sessions
+        totalSessions = settings.sessionsBeforeLongBreak;
+        updateSessionCounter();
+      }
+
+      // Theme switching functionality
+      const themeButtons = document.querySelectorAll('.theme-btn');
+      const root = document.documentElement;
+
+      // Theme colors
+      const themes = {
+        sunset: {
+          primary: '#FCA5A5',
+          primaryRgb: '252, 165, 165',
+          secondary: '#FED7AA',
+          secondaryRgb: '254, 215, 170',
+          accent: '#A78BFA',
+          accentRgb: '167, 139, 250',
+          background: 'linear-gradient(to bottom, #7F1D1D, #B91C1C, #EF4444)',
+          cardBg: 'linear-gradient(135deg, #FCA5A5 0%, #F87171 50%, #EF4444 100%)',
+          text: '#FEF2F2',
+          textRgb: '254, 242, 242'
+        },
+        ocean: {
+          primary: '#A5F3FC',
+          primaryRgb: '165, 243, 252',
+          secondary: '#BAE6FD',
+          secondaryRgb: '186, 230, 253',
+          accent: '#F472B6',
+          accentRgb: '244, 114, 182',
+          background: 'linear-gradient(to bottom, #164E63, #0E7490, #06B6D4)',
+          cardBg: 'linear-gradient(135deg, #22D3EE 0%, #06B6D4 50%, #0E7490 100%)',
+          text: '#ECFEFF',
+          textRgb: '236, 254, 255'
+        },
+        purple: {
+          primary: '#D8B4FE',
+          primaryRgb: '216, 180, 254',
+          secondary: '#F0ABFC',
+          secondaryRgb: '240, 171, 252',
+          accent: '#FBBF24',
+          accentRgb: '251, 191, 36',
+          background: 'linear-gradient(to bottom, #581C87, #7E22CE, #9333EA)',
+          cardBg: 'linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #7E22CE 100%)',
+          text: '#FAF5FF',
+          textRgb: '250, 245, 255'
+        },
+        green: {
+          primary: '#86EFAC',
+          primaryRgb: '134, 239, 172',
+          secondary: '#BEF264',
+          secondaryRgb: '190, 242, 100',
+          accent: '#FB923C',
+          accentRgb: '251, 146, 60',
+          background: 'linear-gradient(to bottom, #14532D, #15803D, #16A34A)',
+          cardBg: 'linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%)',
+          text: '#F0FDF4',
+          textRgb: '240, 253, 244'
+        },
+        blue: {
+          primary: '#38BDF8',
+          primaryRgb: '56, 189, 248',
+          secondary: '#7DD3FC',
+          secondaryRgb: '125, 211, 252',
+          accent: '#FB7185',
+          accentRgb: '251, 113, 133',
+          background: 'linear-gradient(to bottom, #0C4A6E, #0369A1, #0284C7)',
+          cardBg: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%)',
+          text: '#F0F9FF',
+          textRgb: '240, 249, 255'
+        },
+        dark: {
+          primary: '#8B5CF6',
+          primaryRgb: '139, 92, 246',
+          secondary: '#06B6D4',
+          secondaryRgb: '6, 182, 212',
+          accent: '#F43F5E',
+          accentRgb: '244, 63, 94',
+          background: 'linear-gradient(to bottom, #0F172A, #1E293B, #334155)',
+          cardBg: 'linear-gradient(135deg, #334155 0%, #1E293B 50%, #0F172A 100%)',
+          text: '#F8FAFC',
+          textRgb: '248, 250, 252'
+        },
+        light: {
+          primary: '#6D28D9',
+          primaryRgb: '109, 40, 217',
+          secondary: '#0891B2',
+          secondaryRgb: '8, 145, 178',
+          accent: '#E11D48',
+          accentRgb: '225, 29, 72',
+          background: 'linear-gradient(to bottom, #F8FAFC, #F1F5F9, #E2E8F0)',
+          cardBg: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%)',
+          text: '#0F172A',
+          textRgb: '15, 23, 42'
+        }
+      };
+
+      // Apply theme
+      function applyTheme(theme) {
+        const colors = themes[theme];
+
+        // Extract RGB values for primary color
+        const primaryRgb = extractRgb(colors.primary);
+        const secondaryRgb = extractRgb(colors.secondary);
+        const textRgb = extractRgb(colors.text);
+
+        root.style.setProperty('--primary', colors.primary);
+        root.style.setProperty('--primary-rgb', primaryRgb);
+        root.style.setProperty('--secondary', colors.secondary);
+        root.style.setProperty('--secondary-rgb', secondaryRgb);
+        root.style.setProperty('--accent', colors.accent);
+        root.style.setProperty('--background', colors.background);
+        root.style.setProperty('--card-bg', colors.cardBg);
+        root.style.setProperty('--text', colors.text);
+        root.style.setProperty('--text-rgb', textRgb);
+
+        // Update active button
+        themeButtons.forEach(btn => {
+          if (btn.dataset.theme === theme) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+
+        // Recreate particles with new theme colors
+        if (settings.enableBgAnimation) {
+          createParticles();
+        }
+      }
+
+      // Extract RGB values from hex color
+      function extractRgb(hex) {
+        // Remove # if present
+        hex = hex.replace('#', '');
+
+        // Convert 3-digit hex to 6-digit
+        if (hex.length === 3) {
+          hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+
+        // Extract RGB values
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+
+        return `${r}, ${g}, ${b}`;
+      }
+
+      // Add event listeners to theme buttons
+      themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const theme = btn.dataset.theme;
+          applyTheme(theme);
+        });
+      });
+    </script>
+  </body>
+</html>
