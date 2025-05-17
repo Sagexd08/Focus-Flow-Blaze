@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# Focus Flow Blaze
 
-## Project info
+A feature-rich Pomodoro timer application with a beautiful, animated interface to help you stay focused and productive.
 
-**URL**: https://lovable.dev/projects/093655e7-a903-4f52-8930-98d4012ea260
+## Features
 
-## How can I edit this code?
+- **Customizable Timer Intervals**: Set your own work, short break, and long break durations
+- **Session Tracking**: Keep track of completed sessions with visual progress indicators
+- **Beautiful Themes**: Choose from 7 different color themes to match your mood
+- **Visual Effects**:
+  - Eye-tracking (mouse-based) for parallax effects
+  - 3D animations and transformations
+  - Particle animations
+  - Animated backgrounds
+- **Accessibility Features**:
+  - High contrast mode
+  - Larger text option
+  - Reduced animations option
+- **Audio Notifications**: Customizable sounds for different timer events
+- **Persistent Settings**: Your preferences are saved between sessions
 
-There are several ways of editing your application.
+## Technologies Used
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/093655e7-a903-4f52-8930-98d4012ea260) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- Vite
 
-## How can I deploy this project?
+## Getting Started
 
-Simply open [Lovable](https://lovable.dev/projects/093655e7-a903-4f52-8930-98d4012ea260) and click on Share -> Publish.
+### Prerequisites
 
-## Can I connect a custom domain to my Lovable project?
+- Node.js (v14 or higher)
+- npm or yarn
 
-Yes, you can!
+### Installation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Clone the repository
+   ```
+   git clone https://github.com/Sagexd08/Focus-Flow-Blaze.git
+   cd Focus-Flow-Blaze
+   ```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+2. Install dependencies
+   ```
+   npm install
+   ```
+
+3. Start the development server
+   ```
+   npm run dev
+   ```
+
+4. Open your browser and navigate to `http://localhost:5173`
+
+## Usage
+
+1. Choose your preferred theme
+2. Set your timer durations in the settings
+3. Click "Start" to begin your focus session
+4. Work until the timer ends
+5. Take a break when prompted
+6. Repeat to boost your productivity!
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Inspired by the Pomodoro Technique by Francesco Cirillo
+- Built with modern web technologies for a smooth user experience
